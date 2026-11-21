@@ -97,21 +97,30 @@ pub struct VideoRegexObject {
 }
 
 /// One record in DownloadedFile.json.
+///
+/// The production files are written by the legacy C# tool, which names this
+/// field `DownloadedDT` (all-caps DT). serde's default PascalCase would emit
+/// `DownloadedDt`, so we rename explicitly to the C# key and accept both
+/// spellings on read (alias) for backwards compat.
 #[derive(Debug, Clone, Deserialize, Serialize)]
 #[serde(rename_all = "PascalCase")]
 pub struct DownloadedFile {
     pub file_name: String,
+    #[serde(rename = "DownloadedDT", alias = "DownloadedDt")]
     pub downloaded_dt: String,
     pub source: String,
     pub download_path: Option<String>,
 }
 
 /// One record in FailedDownloadedFile.json.
+///
+/// Same C#-compatibility note as DownloadedFile: the real key is `AttemptDT`.
 #[derive(Debug, Clone, Deserialize, Serialize)]
 #[serde(rename_all = "PascalCase")]
 pub struct FailedDownloadedFile {
     pub file_name: String,
     pub magnet_link: String,
+    #[serde(rename = "AttemptDT", alias = "AttemptDt")]
     pub attempt_dt: String,
     pub download_path: Option<String>,
     pub source: String,
