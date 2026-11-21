@@ -31,8 +31,10 @@ services:
       - ENABLE_FILEBROWSER=false
       - ENABLE_APP_CHECKER=false
     volumes:
-      # Real Windows download root -> container path (matches PathMapping)
-      - "D:\\[HttpSharing]\\AnimeDL\\Test:/data"
+      # Real Windows download root -> container path (matches PathMapping:
+      # D:\\[HttpSharing] -> /data). Default subfolder (AnimeDL) is set in
+      # aria2.conf via dir=.
+      - "D:\\[HttpSharing]:/data"
       # aria2's config folder. Must hold aria2.conf, aria2.session and the two
       # hook scripts (auto-upload.sh, aria2-sample-hook.sh) the conf references;
       # the image runs your aria2.conf verbatim (no dir= rewrite).
@@ -55,7 +57,7 @@ services:
       - "D:\\MagnetDownloader\\Config:/app/config"
       # Same download root (as /data) so the tool's PathMapping translation
       # matches aria2's real dir.
-      - "D:\\[HttpSharing]\\AnimeDL\\Test:/data"
+      - "D:\\[HttpSharing]:/data"
     depends_on:
       - aria2
     environment:
