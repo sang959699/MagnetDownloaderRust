@@ -92,8 +92,14 @@ async fn download_magnet(store: &store::Store, config: &Config) -> Result<(), Bo
             feed.entries
                 .into_iter()
                 .filter(|e| {
-                    let dt = e.published.map(|p| p.to_rfc3339()).unwrap_or_default();
-                    latest_dt.as_ref().map_or(true, |last| dt.as_str() >= last.as_str())
+                    // Compare as absolute instants, not RFC3339 strings, so the
+                    // feed's published offset (often +00:00) and our UTC+8
+                    // `latest_dt` compare correctly regardless of zone.
+                    let published = e.published.map(|p| p.timestamp_millis());
+                    let last = latest_dt.as_ref().and_then(|s| {
+                        chrono::DateTime::parse_from_rfc3339(s).ok().map(|t| t.timestamp_millis())
+                    });
+                    last.map_or(true, |last| published.map_or(false, |dt| dt >= last))
                 })
                 .collect()
         };
