@@ -23,8 +23,10 @@ services:
       - RPC_SECRET=REPLACE_WITH_YOUR_SECRET
       - RPC_PORT=6800
       # Where downloads go inside the container. Must match the container side
-      # of the PathMapping you set in Config.json.
+      # of the PathMapping you set in Config.json. The image writes this as
+      # dir= in aria2.conf on every boot.
       - LISTEN_PORT=6881
+      - DOWNLOAD_DIR=/data/downloads
     volumes:
       # Real Windows download root -> container path (matches PathMapping)
       - "D:\\[HttpSharing]\\AnimeDL\\Test:/data/downloads"
