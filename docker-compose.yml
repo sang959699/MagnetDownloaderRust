@@ -24,10 +24,10 @@ services:
       # of the PathMapping you set in Config.json.
       - LISTEN_PORT=6881
     volumes:
-      # Real Windows download root -> container path
+      # Real Windows download root -> container path (matches PathMapping)
       - "D:\\HttpSharing:/data/downloads"
-      # Config directory for aria2 (optional aria2.conf lives here)
-      - "D:\\MagnetDownloader\\Config:/config"
+      # aria2's own config folder (aria2.conf + certs live here)
+      - "D:\\MagnetDownloader\\aria2:/config"
     ports:
       - "6800:6800"   # JSON-RPC (bind to localhost if only Docker uses it)
       - "6881:6881"   # DHT/BT port
