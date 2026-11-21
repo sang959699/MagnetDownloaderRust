@@ -121,8 +121,12 @@ async fn download_magnet(store: &store::Store, config: &Config) -> Result<(), Bo
                     }
                 };
 
+                // Trim on compare so a stale trailing/leading space in either
+                // file can't cause a spurious re-download of an already-saved item.
                 if re.is_match(&title_text)
-                    && !downloaded.iter().any(|d| d.file_name == title_text)
+                    && !downloaded
+                        .iter()
+                        .any(|d| d.file_name.trim() == title_text.trim())
                 {
                     let magnet = get_magnet_link(item);
                     let magnet = match magnet {
@@ -179,7 +183,7 @@ async fn download_magnet(store: &store::Store, config: &Config) -> Result<(), Bo
         // though it is already recorded in DownloadedFile.json.
         if downloaded_once
             .iter()
-            .any(|d| d.file_name == item.file_name)
+            .any(|d| d.file_name.trim() == item.file_name.trim())
         {
             continue;
         }

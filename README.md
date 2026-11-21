@@ -35,7 +35,7 @@ for aria2 when running inside Docker.
 
 ### `PathMapping` and download paths
 
-Download paths in the JSON are **Windows paths** (e.g. `D:\HttpSharing\Anime`)
+Download paths in the JSON are **Windows paths** (e.g. `D:\[HttpSharing]\Anime`)
 because the external web app (cont5) and SMB operate on the real Windows
 filesystem. When the tool and aria2 run in containers on that same Windows host,
 the download root is bind-mounted at a container path. `PathMapping` tells the
@@ -43,10 +43,10 @@ tool how to translate a Windows prefix into the equivalent container path before
 sending `dir` to aria2:
 
 ```json
-"PathMapping": { "D:\\HttpSharing": "/data/downloads" }
+"PathMapping": { "D:\\[HttpSharing]": "/data/downloads" }
 ```
 
-- `DownloadPathPrefix` empty → default root `D:\HttpSharing\AnimeDL`.
+- `DownloadPathPrefix` empty → default root `D:\[HttpSharing]\AnimeDL`.
 - Otherwise target = `DownloadPathPrefix + <subpath>`.
 - Each rule's `dir` option is the translated path.
 
@@ -66,7 +66,7 @@ See `docker-compose.yml` for the bind mounts. Two volumes are used on Windows
 (Docker Desktop translates `D:\...` automatically):
 
 - `D:\MagnetDownloader\Config` → `/app/config` (the four JSON files)
-- `D:\HttpSharing` → `/data/downloads` (the download root)
+- `D:\[HttpSharing]` → `/data/downloads` (the download root)
 
 Set `PathMapping` accordingly in `Config.json` and align `aria_json_rpc_url` /
 `aria_json_rpc_token` with the aria2 service.

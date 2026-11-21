@@ -6,8 +6,8 @@ use std::collections::HashMap;
 /// The JSON files keep Windows paths because the external web app (cont5) and
 /// SMB both operate on the real Windows filesystem. When running inside a
 /// Docker container on the same Windows host, those paths are bind-mounted at
-/// a container path (e.g. `D:\HttpSharing` -> `/data/downloads`). This module
-/// rewrites the prefix before the path is sent to aria2.
+/// a container path (e.g. `D:\[HttpSharing]` -> `/data/downloads`). This
+/// module rewrites the prefix before the path is sent to aria2.
 pub fn translate_download_path(
     raw: &str,
     path_mapping: &HashMap<String, String>,
@@ -39,8 +39,8 @@ pub fn translate_download_path(
     // fall back to the default container dir. Otherwise return the normalized
     // path as-is (best effort; the user is responsible for making it valid in
     // the container).
-    if normalized.trim() == "D:/HttpSharing/AnimeDL"
-        || normalized.trim() == "D:/HttpSharing/AnimeDL/"
+    if normalized.trim() == "D:/[HttpSharing]/AnimeDL"
+        || normalized.trim() == "D:/[HttpSharing]/AnimeDL/"
     {
         default_container_dir.to_string()
     } else {
@@ -49,7 +49,7 @@ pub fn translate_download_path(
 }
 
 /// Case-insensitive check that `path` starts with `prefix` at a component
-/// boundary (so `D:\Http` does not match `D:\HttpSharing`).
+/// boundary (so `D:\Http` does not match `D:\[HttpSharing]`).
 fn matches_prefix(path: &str, prefix: &str) -> bool {
     if prefix.is_empty() {
         return true;
@@ -77,14 +77,14 @@ mod tests {
 
     fn mapping() -> HashMap<String, String> {
         let mut m = HashMap::new();
-        m.insert("D:\\HttpSharing".to_string(), "/data/downloads".to_string());
+        m.insert("D:\\[HttpSharing]".to_string(), "/data/downloads".to_string());
         m
     }
 
     #[test]
     fn translates_prefixed_path() {
         let out = translate_download_path(
-            "D:\\HttpSharing\\Anime\\Foo",
+            "D:\\[HttpSharing]\\Anime\\Foo",
             &mapping(),
             "/data/downloads/AnimeDL",
         );
@@ -94,7 +94,7 @@ mod tests {
     #[test]
     fn default_root_maps_to_default_dir() {
         let out = translate_download_path(
-            "D:\\HttpSharing\\AnimeDL",
+            "D:\\[HttpSharing]\\AnimeDL",
             &mapping(),
             "/data/downloads/AnimeDL",
         );
@@ -104,7 +104,7 @@ mod tests {
     #[test]
     fn empty_prefix_default() {
         let out = translate_download_path(
-            "D:\\HttpSharing\\AnimeDL",
+            "D:\\[HttpSharing]\\AnimeDL",
             &mapping(),
             "/data/downloads/AnimeDL",
         );
@@ -115,10 +115,10 @@ mod tests {
     fn no_mapping_passthrough() {
         let empty = HashMap::new();
         let out = translate_download_path(
-            "D:\\HttpSharing\\Anime",
+            "D:\\[HttpSharing]\\Anime",
             &empty,
             "/data/downloads/AnimeDL",
         );
-        assert_eq!(out, "D:/HttpSharing/Anime");
+        assert_eq!(out, "D:/[HttpSharing]/Anime");
     }
 }

@@ -91,7 +91,7 @@ impl Store {
 
     pub fn push_failed(&self, rec: FailedDownloadedFile) -> std::io::Result<()> {
         let mut list = self.load_failed();
-        if !list.iter().any(|f| f.file_name == rec.file_name) {
+        if !list.iter().any(|f| f.file_name.trim() == rec.file_name.trim()) {
             list.push(rec);
         }
         self.save_failed(&list)

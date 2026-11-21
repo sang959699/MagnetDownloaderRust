@@ -16,7 +16,7 @@ pub struct Config {
     pub latest_successful_run_dt: Option<String>,
     pub search_all: bool,
     /// Added for Docker: maps Windows download roots to container paths.
-    /// E.g. { "D:\\HttpSharing": "/data/downloads" }
+    /// E.g. { "D:\\[HttpSharing]": "/data/downloads" }
     #[serde(rename = "PathMapping")]
     pub path_mapping: HashMap<String, String>,
 }
@@ -39,11 +39,11 @@ impl Default for Config {
 
 impl Config {
     /// The raw download path prefix to use, falling back to the default
-    /// `D:\HttpSharing\AnimeDL` when no prefix is configured.
+    /// `D:\[HttpSharing]\AnimeDL` when no prefix is configured.
     pub fn effective_prefix(&self) -> &str {
         match &self.download_path_prefix {
             Some(p) if !p.trim().is_empty() => p.trim(),
-            _ => "D:\\HttpSharing\\AnimeDL",
+            _ => "D:\\[HttpSharing]\\AnimeDL",
         }
     }
 }
