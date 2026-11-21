@@ -367,13 +367,29 @@ fn read_entity(chars: &[char], out: &mut String) -> Option<usize> {
     None
 }
 
-/// Canonical key for comparing file/title names robustly. Lowercases and
-/// drops whitespace, brackets, slashes and punctuation so two strings that
-/// differ only by invisible characters (NBSP), spacing or bracket style are
-/// still treated as the same item. Keeps CJK and alphanumerics.
+/// Recover UTF-8 Japanese/CJK that was stored as a cp1252 mojibake, e.g.
+/// `暗部共生少女` written as `æš—éƒ¨…`. Detects it by re-encoding the string as
+/// cp1252, decoding those bytes as strict UTF-8, and keeping the result only
+/// if it decodes fully (no U+FFFD) and differs from the input.
+pub(crate) fn recover_mojibake(s: &str) -> String {
+    let (bytes, _, had_err) = encoding_rs::WINDOWS_1252.encode(s);
+    if had_err {
+        return s.to_string(); // unmappable char => not cp1252 mojibake
+    }
+    match std::str::from_utf8(&bytes) {
+        Ok(decoded) if decoded != s && !decoded.contains('\u{fffd}') => decoded.to_string(),
+        _ => s.to_string(),
+    }
+}
+
+/// Canonical key for comparing file/title names robustly. Recovers cp1252
+/// mojibake first, then lowercases and drops whitespace, brackets, slashes
+/// and punctuation so two strings that differ only by encoding, invisible
+/// characters (NBSP), spacing or bracket style are still the same item.
 pub(crate) fn normalize_key(s: &str) -> String {
-    let mut out = String::with_capacity(s.len());
-    for c in s.chars() {
+    let fixed = recover_mojibake(s);
+    let mut out = String::with_capacity(fixed.len());
+    for c in fixed.chars() {
         if c.is_alphanumeric() && c != '　' {
             for lc in c.to_lowercase() {
                 out.push(lc);
