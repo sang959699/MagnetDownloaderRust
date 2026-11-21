@@ -230,16 +230,26 @@ async fn download_magnet(store: &store::Store, config: &Config) -> Result<(), Bo
 }
 
 /// Build the aria2 `dir` option for a matched rule.
+///
+/// Two distinct flows, matching the original C# tool's intent:
+///  1. A rule with NO `DownloadPathDelimiter` (no subfolder): we return `None`
+///     so NO `dir` option is sent to aria2. aria2 then falls back to its own
+///     `dir=/data/AnimeDL` from aria2.conf (the container download root).
+///  2. A rule WITH a `DownloadPathDelimiter` (animename subfolder): we return
+///     `DownloadPathPrefix + animename`, translated to the container path, so
+///     aria2 downloads to that subfolder under the download root.
 fn compute_dir(config: &Config, rule_path: Option<&str>) -> Option<String> {
-    let raw = match (config.effective_prefix(), rule_path) {
-        (prefix, Some(sub)) if !sub.is_empty() => {
-            let prefix = prefix.trim_end_matches(['\\', '/']);
-            let sub = sub.trim_start_matches(['\\', '/']);
-            format!("{}\\{}", prefix, sub)
+    let sub = rule_path.map(|s| s.trim_matches(['\\', '/']).to_string());
+    match sub {
+        Some(sub) if !sub.is_empty() => {
+            let prefix = config
+                .effective_prefix()
+                .trim_end_matches(['\\', '/']);
+            translate_dir(&Some(format!("{}\\{}", prefix, sub)), config)
         }
-        (prefix, _) => prefix.to_string(),
-    };
-    translate_dir(&Some(raw), config)
+        // No delimiter subfolder: do not send a dir; let aria2.conf `dir=` rule.
+        _ => None,
+    }
 }
 
 /// Translate a stored Windows path into a container path for aria2.
@@ -356,7 +366,7 @@ fn read_entity(chars: &[char], out: &mut String) -> Option<usize> {
         ("amp;", '&'),
         ("lt;", '<'),
         ("gt;", '>'),
-        ("quot;", '"'),
+        ("quot;", '\"'),
         ("apos;", '\''),
         ("nbsp;", '\u{00a0}'),
         ("hellip;", '\u{2026}'),
