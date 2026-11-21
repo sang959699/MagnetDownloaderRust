@@ -40,12 +40,13 @@ services:
       # the image runs your aria2.conf verbatim (no dir= rewrite).
       - "D:\\MagnetDownloader\\aria2:/app/conf"
     ports:
-      # Host 6801 -> container 6801 (aria2 RPC port). Matches the IIS rule
-      # public 6800 -> localhost:6801. Port 80 on the host is left free (used
-      # by another app). NOTE: requires aria2 to bind RPC on 0.0.0.0:6801 in
-      # aria2.conf (rpc-listen-port=6801), otherwise only Caddy on container
-      # port 80 serves /jsonrpc.
-      - "6801:6801"
+      # Caddy web port: serves the RPC at /jsonrpc on container port 80.
+      # Published to host 6801 so the existing IIS rule public 6800 ->
+      # localhost:6801 keeps working. Port 80 on the host is left free (used
+      # by another app). This image exposes RPC only via Caddy on 80 (aria2
+      # binds RPC on loopback internally), so the native-port map fails with
+      # "connection closed".
+      - "6801:80"
       # BT/DHT ports.
       - "6881-6999:6881-6999/tcp"
       - "6881-6999:6881-6999/udp"
