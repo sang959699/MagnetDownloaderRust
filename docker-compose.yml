@@ -6,39 +6,42 @@
 # Windows paths untouched.
 #
 # Before first use, add a PathMapping to D:\MagnetDownloader\Config\Config.json:
-#   "PathMapping": { "D:\\[HttpSharing]\\AnimeDL\\Test": "/data/downloads" }
-# and set aria_json_rpc_url/token to match aria2-pro below. RPC_SECRET here,
-# rpc-secret in aria2.conf, and Config.json's token must all be identical.
+#   "PathMapping": { "D:\\[HttpSharing]\\AnimeDL\\Test": "/data" }
+# and set aria_json_rpc_url to http://aria2:80/jsonrpc and token to match the
+# aria2 service below. RPC_SECRET here, rpc-secret in aria2.conf, and
+# Config.json's aria_json_rpc_token must all be identical.
 
 services:
   aria2:
-    image: p3terx/aria2-pro:latest
+    image: wahyd4/aria2-ui:latest
     container_name: aria2
     restart: unless-stopped
     environment:
       - PUID=1000
       - PGID=1000
-      # RPC token must match Config.json's aria_json_rpc_token AND rpc-secret
-      # in aria2.conf. Set ONE value here:
+      # ENABLE_AUTH=false: the tool sends no HTTP basic-auth header, only the
+      # token: JSON-RPC param, so Caddy must not demand basic auth.
+      - ENABLE_AUTH=false
+      # RPC secret token. Must match rpc-secret in aria2.conf and Config.json's
+      # aria_json_rpc_token.
       - RPC_SECRET=REPLACE_WITH_YOUR_SECRET
-      - RPC_PORT=6800
-      # Where downloads go inside the container. Must match the container side
-      # of the PathMapping you set in Config.json. The image writes this as
-      # dir= in aria2.conf on every boot.
-      - LISTEN_PORT=6881
-      - DOWNLOAD_DIR=/data/downloads
+      - ENABLE_RCLONE=false
+      - ENABLE_FILEBROWSER=false
+      - ENABLE_APP_CHECKER=false
     volumes:
       # Real Windows download root -> container path (matches PathMapping)
-      - "D:\\[HttpSharing]\\AnimeDL\\Test:/data/downloads"
-      # aria2's certificate folder
-      - "D:\\MagnetDownloader\\cert:/cert"
-      # aria2's own config folder (aria2.conf lives here)
-      - "D:\\MagnetDownloader\\aria2:/config"
+      - "D:\\[HttpSharing]\\AnimeDL\\Test:/data"
+      # aria2's config folder. Must hold aria2.conf, aria2.session and the two
+      # hook scripts (auto-upload.sh, aria2-sample-hook.sh) the conf references;
+      # the image runs your aria2.conf verbatim (no dir= rewrite).
+      - "D:\\MagnetDownloader\\aria2:/app/conf"
     ports:
-      - "6800:6800"   # JSON-RPC (bind to localhost if only Docker uses it)
-      - "6881:6881"   # DHT/BT port
-      - "6881:6881/udp"
-      - "6880:6880"   # AriaNg built-in UI (optional; you also host your own)
+      # Caddy web port; proxies the RPC at /jsonrpc. The tool reaches it on the
+      # docker network at http://aria2:80/jsonrpc; 6880:80 is for host UI access.
+      - "6880:80"
+      # BT/DHT ports.
+      - "6881-6999:6881-6999/tcp"
+      - "6881-6999:6881-6999/udp"
 
   magnetdownloader:
     build: .
@@ -48,8 +51,9 @@ services:
       # Your production JSON files (Config.json, DownloadedFile.json,
       # FailedDownloadedFile.json, VideoRegex.json)
       - "D:\\MagnetDownloader\\Config:/app/config"
-      # Same download root, in case the tool ever needs to inspect files.
-      - "D:\\[HttpSharing]\\AnimeDL\\Test:/data/downloads"
+      # Same download root (as /data) so the tool's PathMapping translation
+      # matches aria2's real dir.
+      - "D:\\[HttpSharing]\\AnimeDL\\Test:/data"
     depends_on:
       - aria2
     environment:

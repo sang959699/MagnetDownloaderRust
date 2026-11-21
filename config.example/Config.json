@@ -1,5 +1,5 @@
 {
-  "AriaJsonRpcUrl": "http://aria2:6800/jsonrpc",
+  "AriaJsonRpcUrl": "http://aria2:80/jsonrpc",
   "AriaJsonRpcToken": "my-token",
   "RunImmediately": false,
   "RssUrl": [
@@ -10,6 +10,6 @@
   "LatestSuccessfulRunDt": null,
   "SearchAll": false,
   "PathMapping": {
-    "D:\\HttpSharing": "/data/downloads"
+    "D:\\HttpSharing": "/data"
   }
 }
