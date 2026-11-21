@@ -109,6 +109,12 @@ async fn download_magnet(store: &store::Store, config: &Config) -> Result<(), Bo
         log(&format!("Downloaded entries loaded: {}", downloaded.len()));
         let video_regex = store.load_video_regex(&config.download_path_delimiter);
 
+        // Precompute the normalized keys of every already-downloaded title once.
+        // Each match check below is then an O(1) lookup instead of scanning the
+        // whole (thousands-entry) history list and re-normalizing per comparison.
+        let downloaded_keys: std::collections::HashSet<String> =
+            downloaded.iter().map(|d| normalize_key(&d.file_name)).collect();
+
         for item in &items {
             let title_text = item
                 .title
@@ -119,6 +125,9 @@ async fn download_magnet(store: &store::Store, config: &Config) -> Result<(), Bo
                 continue;
             }
 
+            // Dedup is per-title, not per-rule, so hoist it out of the rule loop.
+            let already = downloaded_keys.contains(&normalize_key(&title_text));
+
             for rule in &video_regex {
                 let re = match Regex::new(&rule.file_regex) {
                     Ok(r) => r,
@@ -128,12 +137,6 @@ async fn download_magnet(store: &store::Store, config: &Config) -> Result<(), Bo
                     }
                 };
 
-                // Trim on compare so a stale trailing/leading space in either
-                // file can't cause a spurious re-download of an already-saved item.
-                let already = downloaded.iter().any(|d| same_item(&d.file_name, &title_text));
-                if already {
-                    log(&format!("SKIP already downloaded: {}", title_text));
-                }
                 if re.is_match(&title_text) && !already
                 {
                     let magnet = get_magnet_link(item);
@@ -185,14 +188,13 @@ async fn download_magnet(store: &store::Store, config: &Config) -> Result<(), Bo
         failed_list.len()
     ));
     let downloaded_once = store.load_downloaded();
+    let downloaded_once_keys: std::collections::HashSet<String> =
+        downloaded_once.iter().map(|d| normalize_key(&d.file_name)).collect();
     for item in &failed_list {
         // Never re-try a download that already succeeded: the same item can
         // linger in the failed list (e.g. after a connectivity blip) even
         // though it is already recorded in DownloadedFile.json.
-        if downloaded_once
-            .iter()
-            .any(|d| same_item(&d.file_name, &item.file_name))
-        {
+        if downloaded_once_keys.contains(&normalize_key(&item.file_name)) {
             continue;
         }
         let dir = translate_dir(&item.download_path, config);
