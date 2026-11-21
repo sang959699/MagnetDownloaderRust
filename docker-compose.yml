@@ -6,10 +6,12 @@
 # Windows paths untouched.
 #
 # Before first use, add a PathMapping to D:\MagnetDownloader\Config\Config.json:
-#   "PathMapping": { "D:\\[HttpSharing]\\AnimeDL\\Test": "/data" }
-# and set aria_json_rpc_url to http://aria2:80/jsonrpc and token to match the
-# aria2 service below. RPC_SECRET here, rpc-secret in aria2.conf, and
-# Config.json's aria_json_rpc_token must all be identical.
+#   "PathMapping": { "D:\\[HttpSharing]": "/data" }
+# and set aria_json_rpc_url to http://aria2:80/jsonrpc (plain http, port 80)
+# and token to match the aria2 service below. RPC_SECRET here, rpc-secret in
+# aria2.conf, and Config.json's aria_json_rpc_token must all be identical.
+# NOTE: this image ignores rpc-certificate/rpc-listen-all/rpc-secure in
+# aria2.conf (Caddy terminates TLS and proxies RPC on port 80).
 
 services:
   aria2:
