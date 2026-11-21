@@ -107,8 +107,8 @@ pub struct VideoRegexObject {
 pub struct DownloadedFile {
     pub file_name: String,
     #[serde(rename = "DownloadedDT", alias = "DownloadedDt")]
-    pub downloaded_dt: String,
-    pub source: String,
+    pub downloaded_dt: Option<String>,
+    pub source: Option<String>,
     pub download_path: Option<String>,
 }
 
@@ -121,9 +121,9 @@ pub struct FailedDownloadedFile {
     pub file_name: String,
     pub magnet_link: String,
     #[serde(rename = "AttemptDT", alias = "AttemptDt")]
-    pub attempt_dt: String,
+    pub attempt_dt: Option<String>,
     pub download_path: Option<String>,
-    pub source: String,
+    pub source: Option<String>,
 }
 
 /// JSON-RPC request body for aria2.addUri.

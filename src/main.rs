@@ -153,8 +153,8 @@ async fn download_magnet(store: &store::Store, config: &Config) -> Result<(), Bo
                             let _ = store.remove_failed(&title_text);
                             let rec = DownloadedFile {
                                 file_name: title_text.clone(),
-                                downloaded_dt: chrono_now().to_rfc3339(),
-                                source: url.clone(),
+                                downloaded_dt: Some(chrono_now().to_rfc3339()),
+                                source: Some(url.clone()),
                                 download_path: dir.clone(),
                             };
                             let _ = store.push_downloaded(rec);
@@ -164,9 +164,9 @@ async fn download_magnet(store: &store::Store, config: &Config) -> Result<(), Bo
                             let rec = FailedDownloadedFile {
                                 file_name: title_text.clone(),
                                 magnet_link: magnet.clone(),
-                                attempt_dt: chrono_now().to_rfc3339(),
+                                attempt_dt: Some(chrono_now().to_rfc3339()),
                                 download_path: dir.clone(),
-                                source: url.clone(),
+                                source: Some(url.clone()),
                             };
                             let _ = store.push_failed(rec);
                             log(&format!("AddDownload Failed: {} ({})", title_text, e));
@@ -202,7 +202,7 @@ async fn download_magnet(store: &store::Store, config: &Config) -> Result<(), Bo
                 let _ = store.remove_failed(&item.file_name);
                 let rec = DownloadedFile {
                     file_name: item.file_name.clone(),
-                    downloaded_dt: chrono_now().to_rfc3339(),
+                    downloaded_dt: Some(chrono_now().to_rfc3339()),
                     source: item.source.clone(),
                     download_path: item.download_path.clone(),
                 };
