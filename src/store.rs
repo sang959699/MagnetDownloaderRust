@@ -139,8 +139,24 @@ fn read_json_array<T>(path: &Path) -> Vec<T>
 where
     T: serde::de::DeserializeOwned,
 {
-    let json = fs::read_to_string(path).unwrap_or_default();
-    serde_json::from_str(&json).unwrap_or_default()
+    match fs::read_to_string(path) {
+        Err(e) => {
+            eprintln!("[warn] cannot read {}: {}", path.display(), e);
+            Vec::new()
+        }
+        Ok(json) => match serde_json::from_str(&json) {
+            Ok(v) => v,
+            Err(e) => {
+                eprintln!(
+                    "[warn] cannot parse {} ({} bytes): {}",
+                    path.display(),
+                    json.len(),
+                    e
+                );
+                Vec::new()
+            }
+        },
+    }
 }
 
 /// Serialize a value and write it atomically (temp file + rename).
