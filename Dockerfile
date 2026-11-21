@@ -22,9 +22,11 @@ COPY src ./src
 # COPY preserves the source mtime, which can be older than the dummy file
 # created above. Without `touch`, cargo would consider the crate up to date
 # and the image would ship the `fn main() {}` stub.
+#
+# NOTE: do not run the binary during build -- the tool has no CLI args and
+# enters its 15-minute polling loop forever, which blocks the build step.
 RUN touch src/main.rs \
-    && cargo build --release \
-    && /src/target/release/magnetdownloader --help 2>/dev/null; true
+    && cargo build --release
 
 # ---- runtime stage ---------------------------------------------------------
 FROM scratch
