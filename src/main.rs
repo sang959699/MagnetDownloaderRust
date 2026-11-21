@@ -172,7 +172,17 @@ async fn download_magnet(store: &store::Store, config: &Config) -> Result<(), Bo
         "Scan Failed Download File List, Count: {}",
         failed_list.len()
     ));
+    let downloaded_once = store.load_downloaded();
     for item in &failed_list {
+        // Never re-try a download that already succeeded: the same item can
+        // linger in the failed list (e.g. after a connectivity blip) even
+        // though it is already recorded in DownloadedFile.json.
+        if downloaded_once
+            .iter()
+            .any(|d| d.file_name == item.file_name)
+        {
+            continue;
+        }
         let dir = translate_dir(&item.download_path, config);
         let ok = client.add_uri(&item.magnet_link, dir.as_deref()).await;
         match ok {
