@@ -139,22 +139,32 @@ fn read_json_array<T>(path: &Path) -> Vec<T>
 where
     T: serde::de::DeserializeOwned,
 {
+    use std::io::ErrorKind;
+
     match fs::read_to_string(path) {
-        Err(e) => {
-            eprintln!("[warn] cannot read {}: {}", path.display(), e);
+        // A missing file is the legitimate first-run state (nothing downloaded
+        // yet), so treat it as an empty list and let the run proceed.
+        Err(e) if e.kind() == ErrorKind::NotFound => {
+            eprintln!("[warn] no {} yet (first run) - starting empty", path.display());
             Vec::new()
         }
+        // Any other failure (e.g. the file exists but is unreadable, or it
+        // exists but does not parse) is a real problem: proceeding with an
+        // empty list would make the tool re-download everything already saved.
+        // Fail loudly instead of silently corrupting history.
+        Err(e) => panic!(
+            "Cannot read {}: {} - refusing to proceed with an empty dedup list",
+            path.display(),
+            e
+        ),
         Ok(json) => match serde_json::from_str(&json) {
             Ok(v) => v,
-            Err(e) => {
-                eprintln!(
-                    "[warn] cannot parse {} ({} bytes): {}",
-                    path.display(),
-                    json.len(),
-                    e
-                );
-                Vec::new()
-            }
+            Err(e) => panic!(
+                "Cannot parse {} ({} bytes): {} - refusing to proceed with an empty dedup list",
+                path.display(),
+                json.len(),
+                e
+            ),
         },
     }
 }
@@ -177,4 +187,52 @@ fn atomic_write(path: &Path, bytes: &[u8]) -> std::io::Result<()> {
     drop(f);
     fs::rename(&tmp, path)?;
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn tmpdir() -> PathBuf {
+        let d = std::env::temp_dir().join(format!(
+            "magnetdl_test_{}_{}",
+            std::process::id(),
+            std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .unwrap()
+                .as_nanos()
+        ));
+        fs::create_dir_all(&d).unwrap();
+        d
+    }
+
+    #[test]
+    fn missing_file_is_empty_not_panic() {
+        let d = tmpdir();
+        let p = d.join("DownloadedFile.json"); // does not exist
+        let list: Vec<DownloadedFile> = read_json_array(&p);
+        assert!(list.is_empty());
+        fs::remove_dir_all(&d).ok();
+    }
+
+    #[test]
+    #[should_panic(expected = "Cannot parse")]
+    fn corrupt_file_panics() {
+        let d = tmpdir();
+        let p = d.join("DownloadedFile.json");
+        fs::write(&p, "{ this is not valid json").unwrap();
+        let _: Vec<DownloadedFile> = read_json_array(&p);
+    }
+
+    #[test]
+    fn valid_file_parses() {
+        let d = tmpdir();
+        let p = d.join("DownloadedFile.json");
+        // DownloadFile has no required non-null fields beyond FileName.
+        fs::write(&p, r#"[{"FileName":"Show - 01"}]"#).unwrap();
+        let list: Vec<DownloadedFile> = read_json_array(&p);
+        assert_eq!(list.len(), 1);
+        assert_eq!(list[0].file_name, "Show - 01");
+        fs::remove_dir_all(&d).ok();
+    }
 }
