@@ -6,8 +6,9 @@
 # Windows paths untouched.
 #
 # Before first use, add a PathMapping to D:\MagnetDownloader\Config\Config.json:
-#   "PathMapping": { "D:\\HttpSharing": "/data/downloads" }
-# and set aria_json_rpc_url/token to match aria2-pro below.
+#   "PathMapping": { "D:\\[HttpSharing]\\AnimeDL\\Test": "/data/downloads" }
+# and set aria_json_rpc_url/token to match aria2-pro below. RPC_SECRET here,
+# rpc-secret in aria2.conf, and Config.json's token must all be identical.
 
 services:
   aria2:
@@ -17,16 +18,19 @@ services:
     environment:
       - PUID=1000
       - PGID=1000
-      # RPC token must match Config.json's aria_json_rpc_token
-      - RPC_SECRET=magnet-secret
+      # RPC token must match Config.json's aria_json_rpc_token AND rpc-secret
+      # in aria2.conf. Set ONE value here:
+      - RPC_SECRET=REPLACE_WITH_YOUR_SECRET
       - RPC_PORT=6800
       # Where downloads go inside the container. Must match the container side
       # of the PathMapping you set in Config.json.
       - LISTEN_PORT=6881
     volumes:
       # Real Windows download root -> container path (matches PathMapping)
-      - "D:\\HttpSharing:/data/downloads"
-      # aria2's own config folder (aria2.conf + certs live here)
+      - "D:\\[HttpSharing]\\AnimeDL\\Test:/data/downloads"
+      # aria2's certificate folder
+      - "D:\\MagnetDownloader\\cert:/cert"
+      # aria2's own config folder (aria2.conf lives here)
       - "D:\\MagnetDownloader\\aria2:/config"
     ports:
       - "6800:6800"   # JSON-RPC (bind to localhost if only Docker uses it)
@@ -43,7 +47,7 @@ services:
       # FailedDownloadedFile.json, VideoRegex.json)
       - "D:\\MagnetDownloader\\Config:/app/config"
       # Same download root, in case the tool ever needs to inspect files.
-      - "D:\\HttpSharing:/data/downloads"
+      - "D:\\[HttpSharing]\\AnimeDL\\Test:/data/downloads"
     depends_on:
       - aria2
     environment:
