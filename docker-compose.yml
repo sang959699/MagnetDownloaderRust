@@ -40,9 +40,10 @@ services:
       # the image runs your aria2.conf verbatim (no dir= rewrite).
       - "D:\\MagnetDownloader\\aria2:/app/conf"
     ports:
-      # Caddy web port; proxies the RPC at /jsonrpc. The tool reaches it on the
-      # docker network at http://aria2:80/jsonrpc; 6880:80 is for host UI access.
-      - "6880:80"
+      # Caddy web port; proxies the RPC at /jsonrpc on container port 80.
+      # Published to host 6801 so the existing IIS rule 6800 -> 6801 keeps
+      # working. Port 80 on the host is left free (used by another app).
+      - "6801:80"
       # BT/DHT ports.
       - "6881-6999:6881-6999/tcp"
       - "6881-6999:6881-6999/udp"
