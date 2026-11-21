@@ -359,12 +359,16 @@ fn read_entity(chars: &[char], out: &mut String) -> Option<usize> {
     None
 }
 
-fn chrono_now() -> chrono::DateTime<chrono::Utc> {
-    chrono::Utc::now()
+fn chrono_now() -> chrono::DateTime<chrono::FixedOffset> {
+    // Fixed UTC+8 (no DST) so timestamps match the user's other apps. The
+    // container runs in UTC, so we can't rely on the system local timezone.
+    let offset_utc8 = chrono::FixedOffset::east_opt(8 * 3600)
+        .expect("valid fixed offset UTC+8");
+    chrono::Utc::now().with_timezone(&offset_utc8)
 }
 
-fn format_dt(t: chrono::DateTime<chrono::Utc>) -> String {
-    t.format("%d/%m/%Y %H:%M:%S UTC").to_string()
+fn format_dt(t: chrono::DateTime<chrono::FixedOffset>) -> String {
+    t.format("%d/%m/%Y %H:%M:%S +08:00").to_string()
 }
 
 fn log(msg: &str) {
