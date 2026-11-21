@@ -5,11 +5,11 @@
   "RssUrl": [
     "http://example.com/feed.rss"
   ],
-  "DownloadPathPrefix": "D:\\[HttpSharing]\\",
+  "DownloadPathPrefix": "D:\\HttpSharing\\",
   "DownloadPathDelimiter": "|||",
   "LatestSuccessfulRunDt": null,
   "SearchAll": false,
   "PathMapping": {
-    "D:\\[HttpSharing]": "/data"
+    "D:\\HttpSharing": "/data"
   }
 }
