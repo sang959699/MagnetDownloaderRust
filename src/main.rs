@@ -130,9 +130,7 @@ async fn download_magnet(store: &store::Store, config: &Config) -> Result<(), Bo
                 // Trim on compare so a stale trailing/leading space in either
                 // file can't cause a spurious re-download of an already-saved item.
                 if re.is_match(&title_text)
-                    && !downloaded
-                        .iter()
-                        .any(|d| d.file_name.trim() == title_text.trim())
+                    && !downloaded.iter().any(|d| same_item(&d.file_name, &title_text))
                 {
                     let magnet = get_magnet_link(item);
                     let magnet = match magnet {
@@ -189,7 +187,7 @@ async fn download_magnet(store: &store::Store, config: &Config) -> Result<(), Bo
         // though it is already recorded in DownloadedFile.json.
         if downloaded_once
             .iter()
-            .any(|d| d.file_name.trim() == item.file_name.trim())
+            .any(|d| same_item(&d.file_name, &item.file_name))
         {
             continue;
         }
@@ -367,6 +365,27 @@ fn read_entity(chars: &[char], out: &mut String) -> Option<usize> {
         }
     }
     None
+}
+
+/// Canonical key for comparing file/title names robustly. Lowercases and
+/// drops whitespace, brackets, slashes and punctuation so two strings that
+/// differ only by invisible characters (NBSP), spacing or bracket style are
+/// still treated as the same item. Keeps CJK and alphanumerics.
+pub(crate) fn normalize_key(s: &str) -> String {
+    let mut out = String::with_capacity(s.len());
+    for c in s.chars() {
+        if c.is_alphanumeric() && c != '　' {
+            for lc in c.to_lowercase() {
+                out.push(lc);
+            }
+        }
+    }
+    out
+}
+
+/// True if two file/title names refer to the same item (case/spacing-robust).
+pub(crate) fn same_item(a: &str, b: &str) -> bool {
+    normalize_key(a) == normalize_key(b)
 }
 
 fn chrono_now() -> chrono::DateTime<chrono::FixedOffset> {

@@ -1,3 +1,4 @@
+use crate::same_item;
 use crate::models::{
     Config, DownloadedFile, FailedDownloadedFile, VideoRegex, VideoRegexEntry,
 };
@@ -91,7 +92,7 @@ impl Store {
 
     pub fn push_failed(&self, rec: FailedDownloadedFile) -> std::io::Result<()> {
         let mut list = self.load_failed();
-        if !list.iter().any(|f| f.file_name.trim() == rec.file_name.trim()) {
+        if !list.iter().any(|f| same_item(&f.file_name, &rec.file_name)) {
             list.push(rec);
         }
         self.save_failed(&list)
@@ -100,7 +101,7 @@ impl Store {
     pub fn remove_failed(&self, file_name: &str) -> std::io::Result<()> {
         let mut list = self.load_failed();
         let before = list.len();
-        list.retain(|f| f.file_name != file_name);
+        list.retain(|f| !same_item(&f.file_name, file_name));
         if list.len() != before {
             self.save_failed(&list)?;
         }
