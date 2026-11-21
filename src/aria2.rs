@@ -25,7 +25,15 @@ impl Aria2Client {
     /// successful JSON-RPC response (no error field in the reply).
     pub async fn add_uri(&self, uri: &str, dir: Option<&str>) -> Result<bool, String> {
         let mut params: Vec<serde_json::Value> = Vec::new();
-        params.push(json!({ "token": self.rpc_token }));
+        // The tool sends the token to a *native* aria2 JSON-RPC endpoint (e.g.
+        // http://host:6800/jsonrpc or an IIS/nginx-proxied route). aria2's
+        // native protocol expects the auth token as a single compact string
+        // "token:<secret>" in the params array. The object form
+        // {"token":"<secret>"} is only accepted by proxy auth wrappers (Caddy
+        // /Aio), not by aria2 itself, which rejects it with:
+        //   { "error": { "code": 1, "message": "Unauthorized" } }
+        // Emit the canonical native string form so real aria2 accepts it.
+        params.push(json!(format!("token:{}", self.rpc_token)));
         params.push(json!([uri]));
 
         let mut opts: HashMap<String, String> = HashMap::new();
