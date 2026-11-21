@@ -106,6 +106,7 @@ async fn download_magnet(store: &store::Store, config: &Config) -> Result<(), Bo
         log(&format!("Feed Items Count: {}", items.len()));
 
         let downloaded = store.load_downloaded();
+        log(&format!("Downloaded entries loaded: {}", downloaded.len()));
         let video_regex = store.load_video_regex(&config.download_path_delimiter);
 
         for item in &items {
@@ -129,8 +130,11 @@ async fn download_magnet(store: &store::Store, config: &Config) -> Result<(), Bo
 
                 // Trim on compare so a stale trailing/leading space in either
                 // file can't cause a spurious re-download of an already-saved item.
-                if re.is_match(&title_text)
-                    && !downloaded.iter().any(|d| same_item(&d.file_name, &title_text))
+                let already = downloaded.iter().any(|d| same_item(&d.file_name, &title_text));
+                if already {
+                    log(&format!("SKIP already downloaded: {}", title_text));
+                }
+                if re.is_match(&title_text) && !already
                 {
                     let magnet = get_magnet_link(item);
                     let magnet = match magnet {
