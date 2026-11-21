@@ -1,0 +1,50 @@
+# MagnetDownloader (Rust) + aria2, all on a Windows host with Docker Desktop.
+#
+# Bind mounts use Windows paths (D:\...) which Docker Desktop translates
+# automatically. The download root and config folder are mounted into the
+# containers; your external web app (cont5) and SMB keep using the real
+# Windows paths untouched.
+#
+# Before first use, add a PathMapping to D:\MagnetDownloader\Config\Config.json:
+#   "PathMapping": { "D:\\HttpSharing": "/data/downloads" }
+# and set aria_json_rpc_url/token to match aria2-pro below.
+
+services:
+  aria2:
+    image: p3terx/aria2-pro:latest
+    container_name: aria2
+    restart: unless-stopped
+    environment:
+      - PUID=1000
+      - PGID=1000
+      # RPC token must match Config.json's aria_json_rpc_token
+      - RPC_SECRET=magnet-secret
+      - RPC_PORT=6800
+      # Where downloads go inside the container. Must match the container side
+      # of the PathMapping you set in Config.json.
+      - LISTEN_PORT=6881
+    volumes:
+      # Real Windows download root -> container path
+      - "D:\\HttpSharing:/data/downloads"
+      # Config directory for aria2 (optional aria2.conf lives here)
+      - "D:\\MagnetDownloader\\Config:/config"
+    ports:
+      - "6800:6800"   # JSON-RPC (bind to localhost if only Docker uses it)
+      - "6881:6881"   # DHT/BT port
+      - "6881:6881/udp"
+      - "6880:6880"   # AriaNg built-in UI (optional; you also host your own)
+
+  magnetdownloader:
+    build: .
+    container_name: magnetdownloader
+    restart: unless-stopped
+    volumes:
+      # Your production JSON files (Config.json, DownloadedFile.json,
+      # FailedDownloadedFile.json, VideoRegex.json)
+      - "D:\\MagnetDownloader\\Config:/app/config"
+      # Same download root, in case the tool ever needs to inspect files.
+      - "D:\\HttpSharing:/data/downloads"
+    depends_on:
+      - aria2
+    environment:
+      - CONFIG_DIR=/app/config
