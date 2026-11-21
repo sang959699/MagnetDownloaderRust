@@ -24,9 +24,9 @@ services:
       # ENABLE_AUTH=false: the tool sends no HTTP basic-auth header, only the
       # token: JSON-RPC param, so Caddy must not demand basic auth.
       - ENABLE_AUTH=false
-      # RPC secret token. Must match rpc-secret in aria2.conf and Config.json's
-      # aria_json_rpc_token.
-      - RPC_SECRET=REPLACE_WITH_YOUR_SECRET
+      # RPC secret token from .env (gitignored). Must match rpc-secret in
+      # aria2.conf and Config.json's aria_json_rpc_token.
+      - RPC_SECRET=${RPC_SECRET}
       - ENABLE_RCLONE=false
       - ENABLE_FILEBROWSER=false
       - ENABLE_APP_CHECKER=false
